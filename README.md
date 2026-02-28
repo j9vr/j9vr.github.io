@@ -3,30 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>website test| Official Website</title>
+    <title>The Hive</title>
 
     <style>
-        /* RESET */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            scroll-behavior: smooth;
-        }
-
+        /* General Styles */
         body {
+            margin: 0;
             font-family: Arial, sans-serif;
-            background: #0a0a0a;
-            color: white;
+            background-color: #0a0a0a;
+            color: #fff;
+            text-align: center;
         }
 
-        /* HEADER */
+        /* Header */
         header {
-            text-align: center;
-            padding: 45px 20px;
-            background: #111;
-            box-shadow: 0 0 15px #00ffee;
+            padding: 40px;
+            background-color: #111;
+            box-shadow: 0 0 15px #00ffcc;
         }
+
+        header h1 {
+            color: #00ffcc;
+            font-size: 42px;
+            text-shadow: 0 0 15px #00ffcc;
+            margin: 0;
+        }
+
+        header p {
+            font-size: 18px;
+            color: #ccc;
+            margin: 10px 0 0 0;
+        }
+
+        /* Section */
+        .section {
+            padding: 60px 20px;
+        }
+
+        .section h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #00ffcc;
+            text-shadow: 0 0 8px #00ffcc;
+        }
+
+        .section p {
+            font-size: 18px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+            color: #ccc;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 25px;
+            background-color: #00ffcc;
+            color: #000;
+            font-weight: bold;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        .button:hover {
+            background-color: #00bfa5;
+            transform: scale(1.05);
+        }
+
+        /* Footer */
+        footer {
+            padding: 20px;
+            background-color: #111;
+            color: #777;
+            font-size: 14px;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <h1>The Hive</h1>
+        <p>We fight together. We rise together.</p>
+    </header>
+
+    <!-- About Section -->
+    <div class="section">
+        <h2>About Us</h2>
+        <p>The Hive is a gaming/community group built on teamwork, strategy, and loyalty. We never give up and we always watch each other's backs.</p>
+        <p>Our goal is to grow stronger every day and show the world our unity and power.</p>
+        <a class="button" href="#">Join Us</a>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        © 2026 The Hive. All rights reserved.
+    </footer>
+
+</body>
+</html>        }
 
         header h1 {
             font-size: 45px;
