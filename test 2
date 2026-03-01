@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SVS System – Album Studio (New)</title>
+  <style>
+    :root{
+      --bg:#0b0f19; --card:#121a2a; --card2:#0f1626; --border:#23304a;
+      --muted:#92a4c7; --text:#e8eefc; --primary:#2f6fed; --danger:#d14b4b6;
+      --ok:#2ecc71; --warn:#f5c542; --chip:#1c273f;
+    }
+    body { font-family: Arial, sans-serif; background:var(--bg); color:var(--text); margin:0; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .top { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+    .muted { color:var(--muted); font-size: 14px; }
+    .btn { padding:12px 14px; border-radius:12px; border:1px solid #2a3a5c; background:#121a2a; color:var(--text); cursor:pointer; font-weight:800; }
+    .btn.primary { background:var(--primary); border:none; }
+    .btn.secondary { background:#1c273f; border:1px solid #2a3a5c; }
+    .btn.danger { background:#d14b4b; border:none; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:18px; margin-top:14px; }
+    .grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:12px; }
+    @media (max-width: 900px){ .grid { grid-template-columns: 1fr; } }
+    label { font-size:12px; color:var(--muted); display:block; margin:8px 0 6px; }
+    input, select, textarea {
+      padding:12px; border-radius:12px; border:1px solid #2a3a5c;
+      background:var(--card2); color:var(--text); width:100%;
+      box-sizing:border-box;
+    }
+    textarea { min-height: 140px; resize: vertical; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .stepper { display:flex; gap:10px; flex-wrap:wrap; }
+    .step {
+      padding:10px 12px; border-radius:999px; border:1px solid #2a3a5c;
+      background:#0f1626; color:var(--muted); font-weight:800; cursor:pointer;
+    }
+    .step.active { background: #1c273f; color: var(--text); border-color:#3b5ea0; }
+    .step.done { color: var(--ok); }
+    .hint { font-size:12px; color:var(--muted); margin-top:6px; line-height:1.4; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:space-between; margin-top:14px; }
+    .rightActions { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+    table { width:100%; border-collapse: collapse; margin-top:10px; }
+    th, td { border-bottom:1px solid #22304a; padding:10px; text-align:left; vertical-align: top; }
+    th { color:var(--muted); font-size:12px; }
+    .tiny { width: 90px; }
+    .mini { width: 180px; }
+    .copy { background:#16315f; border:1px solid #2a3a5c; }
+    .badge { display:inline-block; padding:6px 10px; border-radius:999px; border:1px solid #2a3a5c; background:#0f1626; font-size:12px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    .panel {
+      padding:12px; border-radius:12px; background:#0f1626; border:1px solid #22304a;
+      white-space:pre-wrap;
+    }
+    .chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .chip { font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid #2a3a5c; background:var(--chip); color:var(--text); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1 style="margin:0;">Album Studio</h1>
+        <div id="who" class="muted"></div>
+      </div>
+      <div class="row">
+        <button id="btnBack" class="btn secondary">Back</button>
+        <button id="btnLogout" class="btn danger">Logout</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between;">
+        <div class="stepper">
+          <div class="step active" data-step="1">1) Artist</div>
+          <div class="step" data-step="2">2) Album Setup</div>
+          <div class="step" data-step="3">3) Track Planner</div>
+          <div class="step" data-step="4">4) Prompt</div>
+        </div>
+        <div class="badge">Full Studio v2</div>
+      </div>
+
+      <div id="msg" class="muted" style="margin-top:10px;"></div>
+
+      <!-- Step 1 -->
+      <div id="step1">
+        <h2 style="margin:14px 0 8px;">Select Artist</h2>
+        <div class="grid">
+          <div>
+            <label for="artist_id">Artist</label>
+            <select id="artist_id"></select>
+
+            <div class="hint">
+              This step only selects the artist for context.<br>
+              Artist identity stays stable (voice + genre family), but each album can have a different mood/theme/style.
+            </div>
+          </div>
+
+          <div>
+            <label>What these fields mean</label>
+            <div class="panel">
+- Artist Lane: the artist’s typical lane (example: Country / Soul / Pop). Used as a “style hint”.
+- Persona: the artist’s writing/production persona. Used as the core style rule for Suno prompts.
+- Album Genres: follow the artist’s main/secondary genres (set in Artist DNA).
+- Artist DNA: stable voice + genre family + instrument rules (always injected into prompts).
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label>Selected Artist (preview)</label>
+          <div id="artistPreview" class="panel mono">(select an artist)</div>
+          <div class="chips" id="artistChips"></div>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div id="step2" style="display:none;">
+        <h2 style="margin:14px 0 8px;">Album Setup</h2>
+        <div class="panel" style="margin:10px 0 12px;">
+          <b>Artist Genres (from Artist DNA)</b><br>
+          <span id="artistGenresPreview" class="muted">—</span><br>
+          <span class="muted">Album genre is inherited from the artist. Use Theme/Mood/Style to shape this album.</span>
+        </div>
+
+
+        <div class="grid">
+</div>
+
+          <div>
+            <label for="lead_type">Lead Type</label>
+            <select id="lead_type">
+              <option value="solo" selected>solo (single artist lead)</option>
+              <option value="solo+choir">solo + choir (backing / response)</option>
+              <option value="choir">choir (choir-led)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="theme">Theme</label>
+            <input id="theme" placeholder="Optional. If blank, ChatGPT will suggest the best theme for this artist + album.">
+          </div>
+
+          <div>
+            <label for="mood">Mood</label>
+            <input id="mood" placeholder="Optional. If blank, ChatGPT will pick a mood that fits the artist + album.">
+          </div>
+
+          <div>
+            <label for="style">Style / Lane Hint</label>
+            <input id="style" placeholder="Optional. If blank, ChatGPT will choose a style lane hint that matches the artist + album.">
+            <div class="hint">Tip: keep this simple (e.g. “Soul worship”, “Country rock”, “Pop ballad”).</div>
+          </div>
+
+          <div>
+            <label for="total_tracks">Number of Tracks</label>
+            <input id="total_tracks" type="number" min="1" max="50" value="12" class="tiny">
+          </div>
+
+          <div>
+            <label for="notes">Album Notes</label>
+            <input id="notes" placeholder="Any constraints, do/don’t, special direction">
+          </div>
+</div>
+
+        <div class="hint">
+          Pro workflow: keep this broad. Track-specific keywords/scripture go in the Track Planner.
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div id="step3" style="display:none;">
+        <h2 style="margin:14px 0 8px;">Track Planner</h2>
+        <div class="row">
+          <button id="btnBuildTracks" class="btn secondary">Build Track Rows</button>
+          <div class="muted">Fill only tracks that need special direction. Leave others blank.</div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th class="tiny">#</th>
+              <th>Track direction / vibe</th>
+              <th class="mini">Keywords</th>
+              <th class="mini" id="thScripture">Scripture <span class="muted">(faith artists only)</span></th>
+            </tr>
+          </thead>
+          <tbody id="tracksBody"></tbody>
+        </table>
+      </div>
+
+      <!-- Step 4 -->
+      <div id="step4" style="display:none;">
+        <h2 style="margin:14px 0 8px;">ChatGPT Prompt</h2>
+        <div class="row">
+          <button id="btnGenerate" class="btn secondary">Generate Prompt</button>
+          <button id="btnCopy" class="btn copy">Copy Prompt</button>
+          <button id="btnSaveDraft" class="btn primary">Save Draft Album</button>
+        </div>
+
+        <div class="hint">
+          This prompt forces ChatGPT to output a strict JSON array where EACH track includes a <b>suno_prompt</b>.
+          If ChatGPT fails to comply, it must output <b>ERROR: NON_COMPLIANT_OUTPUT</b>.
+        </div>
+
+        <textarea id="prompt" class="mono" placeholder="Click “Generate Prompt”…"></textarea>
+      </div>
+
+      <div class="actions">
+        <button id="btnPrev" class="btn secondary">← Previous</button>
+        <div class="rightActions">
+          <button id="btnNext" class="btn primary">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { supabase, requireSessionOrRedirect } from "./app.js";
+    const $ = (id) => document.getElementById(id);
+
+    const ARTISTS = "artists";
+    const ALBUMS = "albums";
+
+    const session = await requireSessionOrRedirect();
+    $("who").textContent = `Signed in: ${session.user.email}`;
+
+    let step = 1;
+    let artist = null;
+
+    function showStep(n){
+      step = n;
+      for (let i=1;i<=4;i++){
+        $("step"+i).style.display = (i===n) ? "" : "none";
+      }
+      document.querySelectorAll(".step").forEach(el => {
+        const s = Number(el.dataset.step);
+        el.classList.toggle("active", s===n);
+        el.classList.toggle("done", s < n);
+      });
+      $("btnPrev").disabled = (n===1);
+      $("btnNext").textContent = (n===4) ? "Finish" : "Next →";
+    }
+
+    document.querySelectorAll(".step").forEach(el => {
+      el.onclick = () => {
+        const n = Number(el.dataset.step);
+        if (n <= step) showStep(n);
+      };
+    });
+
+    
+    function isFaithArtist(a){
+      if (!a) return false;
+      const s = `${a.main_genre||""} ${a.secondary_genre||""}`.toLowerCase();
+      return ["gospel","christian","worship","praise","hymn"].some(k => s.includes(k));
+    }
+
+    function updateArtistGenrePreview(a){
+      const g = [a?.main_genre, a?.secondary_genre].filter(Boolean).join(" / ");
+      const el = $("artistGenresPreview");
+      if (el) el.textContent = g || "—";
+      const th = $("thScripture");
+      if (th) th.style.display = isFaithArtist(a) ? "" : "none";
+      // hide scripture cells in existing rows
+      for (const r of document.querySelectorAll("[data-track-row]")){
+        const cell = r.querySelector("[data-scripture-cell]");
+        if (cell) cell.style.display = isFaithArtist(a) ? "" : "none";
+      }
+    }
+function norm(v){
+      const s = (v ?? "").toString().trim();
+      return s ? s : null;
+    }
+
+    function getTrackPlan(){
+      const rows = [...document.querySelectorAll("[data-track-row]")];
+      return rows.map(r => ({
+        track_number: Number(r.dataset.track),
+        direction: (r.querySelector("[data-direction]").value || "").trim() || null,
+        keywords: (r.querySelector("[data-keywords]").value || "").trim() || null,
+        scripture: isFaithArtist(artist) ? ((r.querySelector("[data-scripture]")?.value || "").trim() || null) : null,
+      }));
+    }
+
+    function ensureTrackRows(){
+      const total = Math.max(1, Math.min(50, Number($("total_tracks").value || 12)));
+      const body = $("tracksBody");
+      body.innerHTML = "";
+      for (let i=1;i<=total;i++){
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-track-row", "1");
+        tr.dataset.track = String(i);
+        tr.innerHTML = `
+          <td class="tiny"><b>${i}</b></td>
+          <td><input data-direction placeholder="e.g. upbeat opener, slow emotional ballad, club banger, guitar anthem"></td>
+          <td><input data-keywords placeholder="e.g. confident, heartbreak, victory"></td>
+          ${isFaithArtist(artist) ? `<td data-scripture-cell><input data-scripture placeholder="e.g. Psalm 23:1"></td>` : `<td data-scripture-cell style="display:none;"></td>`}
+        `;
+        body.appendChild(tr);
+      }
+    }
+
+    function setArtistPreview(a){
+      const lines = [];
+      lines.push(`name: ${a.name || "-"}`);
+      if (a.main_genre || a.secondary_genre) lines.push(`genre: ${(a.main_genre || "—")} / ${(a.secondary_genre || "—")}`);
+      lines.push(`lane: ${a.default_lane || "-"}`);
+      if (a.voice_identity) lines.push(`voice_identity: ${a.voice_identity}`);
+      if (a.must_include) lines.push(`must_include: ${a.must_include}`);
+      if (a.never_include) lines.push(`never_include: ${a.never_include}`);
+      if (a.suno_voice_anchor) lines.push(`suno_voice_anchor: ${a.suno_voice_anchor}`);
+      if (a.default_perso) lines.push(`persona: ${a.default_perso}`);
+      $("artistPreview").textContent = lines.join("\n");
+
+      const chips = $("artistChips");
+      chips.innerHTML = "";
+      const addChip = (txt) => {
+        const s = document.createElement("span");
+        s.className = "chip";
+        s.textContent = txt;
+        chips.appendChild(s);
+      };
+      if (a.main_genre) addChip("main: " + a.main_genre);
+      if (a.secondary_genre) addChip("secondary: " + a.secondary_genre);
+      if (a.default_lane) addChip("lane: " + a.default_lane);
+      if (a.voice_identity) addChip("voice: set");
+      if (a.suno_voice_anchor) addChip("voice_anchor: set");
+      if (a.default_perso) addChip("persona: set");
+    }
+
+    function buildPrompt(){
+      if (!artist) return "";
+
+      const total = Math.max(1, Math.min(50, Number($("total_tracks").value || 12)));
+      const trackPlan = getTrackPlan();
+
+      const albumGenre = [artist.main_genre, artist.secondary_genre].filter(Boolean).join(" / ") || "(not set)";
+      const introLine = isFaithArtist(artist)
+        ? "You are helping me plan a professional GOSPEL / CHRISTIAN album for an AI music workflow."
+        : `You are helping me plan a professional ${albumGenre} album for an AI music workflow.`;
+      const leadType = $("lead_type").value || "solo";
+      const theme = norm($("theme").value);
+      const mood = norm($("mood").value);
+      const styleInput = norm($("style").value);
+      const laneHint = norm(artist.default_lane) || null;
+      const styleHint = styleInput || laneHint || null;
+      const notes = norm($("notes").value);
+
+      const specialLines = trackPlan
+        .filter(t => t.direction || t.keywords || t.scripture)
+        .map(t => {
+          const parts = [];
+          if (t.direction) parts.push("direction: " + t.direction);
+          if (t.keywords) parts.push("keywords: " + t.keywords);
+          if (t.scripture) parts.push("scripture: " + t.scripture);
+          return `Track ${t.track_number}: ${parts.join(" • ")}`;
+        });
+
+      const personaBlock = artist.default_perso
+        ? `ARTIST PERSONA (STYLE VOICE)\n${artist.default_perso}\n`
+        : "";
+
+      return `${introLine}
+
+ARTIST
+- Name: ${artist.name}
+- Lane hint (style family): ${laneHint || "(none)"}
+- Main Genre (stable): ${artist.main_genre || "(none)"}
+- Secondary Genre (stable): ${artist.secondary_genre || "(none)"}
+
+ARTIST DNA (STABLE — MUST APPLY TO EVERY TRACK)
+- Voice Identity: ${artist.voice_identity || "(none)"}
+- Must Include (always instruments): ${artist.must_include || "(none)"}
+- Never Include: ${artist.never_include || "(none)"}
+- Suno Voice Anchor (VOICE): ${artist.suno_voice_anchor || "(none)"}
+
+${personaBlock}ALBUM REQUIREMENTS
+- Album genre: ${albumGenre} (default: Gospel; may be a subgenre)
+- Style hint: ${styleHint || "(decide)"}  (use the ARTIST PERSONA as the main rule)
+- Mood: ${mood || "(decide)"}
+- Theme: ${theme || "(decide)"}
+- Lead type: ${leadType} (solo / solo+choir / choir)
+- Track count: ${total}
+- Notes: ${notes || "(none)"}
+
+TRACK PLANNING (only constraints listed; design the rest naturally)
+${specialLines.length ? specialLines.join("\n") : "(No special track constraints.)"}
+
+TASK
+1) Generate 8 album title ideas.
+2) Choose the ONE best album title that matches the tracklist you are about to create.
+3) Create EXACTLY ${total} tracks. For EACH track include:
+   - track_number (1..${total})
+   - title (no numbering in the title text)
+   - suno_prompt (REQUIRED: must match ARTIST PERSONA + ARTIST DNA + lead type + vibe; include instrumentation/tempo feel/mood/vocal direction; avoid contradictions)
+   - keywords (optional, short comma list)
+   - scripture (optional reference if relevant)
+
+STRICT OUTPUT (MUST MATCH EXACTLY)
+Return ONLY these two blocks in this exact order:
+
+RECOMMENDED_ALBUM_TITLE:
+"One best album title"
+
+TRACKS_JSON:
+[
+  {"track_number":1,"title":"...","suno_prompt":"...","keywords":"...","scripture":"..."},
+  ...
+]
+
+HARD RULES:
+- TRACKS_JSON must contain exactly ${total} objects.
+- Every object MUST include suno_prompt and it MUST NOT be empty.
+- Do NOT output album title ideas list.
+- Do NOT output anything outside the two blocks.
+- If you cannot comply, output exactly:
+ERROR: NON_COMPLIANT_OUTPUT
+`;
+    }
+
+    async function loadArtists(){
+      const { data, error } = await supabase
+        .from(ARTISTS)
+        .select(`id,name,default_lane,default_perso,main_genre,secondary_genre,voice_identity,must_include,never_include,suno_voice_anchor`)
+        .order("name", { ascending: true });
+
+      if (error) { $("msg").textContent = "Error: " + error.message; return; }
+
+      const sel = $("artist_id");
+      sel.innerHTML = '<option value="">Select…</option>';
+      for (const a of data) {
+        const opt = document.createElement("option");
+        opt.value = a.id;
+        opt.textContent = a.name || "(Untitled)";
+        opt.dataset.artist = JSON.stringify(a);
+        sel.appendChild(opt);
+      }
+    }
+
+    async function saveDraft(){
+      if (!artist) return alert("Select an artist first.");
+      const total = Math.max(1, Math.min(50, Number($("total_tracks").value || 12)));
+
+      const prompt = $("prompt").value.trim() || buildPrompt();
+      if (!prompt) return alert("Generate the prompt first.");
+
+      const payload = {
+        artist_id: artist.id,
+        status: "ideation",
+        total_tracks: total,
+        theme: norm($("theme").value),
+        style: norm($("style").value) || norm(artist.default_lane),
+        mood: norm($("mood").value),
+        lead_type: $("lead_type").value || "solo",
+        notes: norm($("notes").value),
+        chatgpt_prompt: prompt,
+        prompt_snapshot: {
+          artist: {
+            id: artist.id,
+            name: artist.name,
+            lane: artist.default_lane || null,
+            main_genre: artist.main_genre || null,
+            secondary_genre: artist.secondary_genre || null,
+            voice_identity: artist.voice_identity || null,
+            must_include: artist.must_include || null,
+            never_include: artist.never_include || null,
+            suno_voice_anchor: artist.suno_voice_anchor || null,
+          },
+          album: {
+            album_genre: (artist?.main_genre || null),
+            theme: norm($("theme").value),
+            mood: norm($("mood").value),
+            style_hint: norm($("style").value) || norm(artist.default_lane),
+            lead_type: $("lead_type").value || "solo",
+            total_tracks: total,
+            notes: norm($("notes").value)
+          },
+          track_plan: getTrackPlan()
+        },
+        working_titles: null,
+        working_tracklist: null,
+        title: null
+      };
+
+      $("msg").textContent = "Saving draft…";
+      const { data, error } = await supabase
+        .from(ALBUMS)
+        .insert([payload])
+        .select("id")
+        .single();
+
+      if (error) { $("msg").textContent = "Error: " + error.message; return; }
+
+      $("msg").textContent = "Saved draft ✅";
+      window.location.href = `./album-edit.html?id=${encodeURIComponent(data.id)}`;
+    }
+
+    $("artist_id").onchange = (e) => {
+      const opt = e.target.selectedOptions?.[0];
+      if (!opt || !opt.value) {
+        artist = null;
+        $("artistPreview").textContent = "(select an artist)";
+        $("artistChips").innerHTML = "";
+        updateArtistGenrePreview(null);
+        return;
+      }
+      artist = JSON.parse(opt.dataset.artist);
+      setArtistPreview(artist);
+      updateArtistGenrePreview(artist);
+    };
+
+    $("btnBuildTracks").onclick = ensureTrackRows;
+
+    $("btnGenerate").onclick = () => {
+      const p = buildPrompt();
+      $("prompt").value = p;
+      $("msg").textContent = p ? "Prompt generated." : "Select an artist first.";
+    };
+
+    $("btnCopy").onclick = async () => {
+      const p = $("prompt").value;
+      if (!p) return alert("Nothing to copy.");
+      await navigator.clipboard.writeText(p);
+      $("msg").textContent = "Copied ✅";
+    };
+
+    $("btnSaveDraft").onclick = saveDraft;
+
+    $("btnPrev").onclick = () => showStep(Math.max(1, step-1));
+    $("btnNext").onclick = () => {
+      if (step === 1){
+        if (!$("artist_id").value) return alert("Select an artist to continue.");
+        showStep(2);
+      } else if (step === 2){
+        if (!$("tracksBody").children.length) ensureTrackRows();
+        showStep(3);
+      } else if (step === 3){
+        showStep(4);
+      } else {
+        saveDraft();
+      }
+    };
+
+    $("btnBack").onclick = () => window.location.href = "./albums.html";
+    $("btnLogout").onclick = async () => {
+      await supabase.auth.signOut();
+      window.location.href = "./index.html";
+    };
+
+    await loadArtists();
+    showStep(1);
+  </script>
+</body>
+</html>
